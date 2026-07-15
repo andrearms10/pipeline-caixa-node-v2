@@ -32,6 +32,9 @@ jobs:
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
+        
+      - name: Registrar início
+        run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
 
       - name: Configurar Node ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -46,6 +49,26 @@ jobs:
 
       - name: Rodar testes
         run: npm test
+        
+      - name: Calcular duração
+        if: always()
+        run: |
+          echo "DURATION=$(( $(date +%s) - $START_TIME ))" >> $GITHUB_ENV
+
+      - name: Publicar Job Summary
+        if: always()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # Métricas da Pipeline
+
+          | Métrica | Valor |
+          |----------|----------|
+          | Duração | ${DURATION}s |
+          | Status | ${{ job.status }} |
+          | Branch | ${GITHUB_REF_NAME} |
+          | Commit | ${GITHUB_SHA::7} |
+
+          EOF
 
   # ---------- 2. BUILD + PUSH DA IMAGEM DOCKER ----------
   # Só roda depois dos testes passarem e apenas em push na main.
